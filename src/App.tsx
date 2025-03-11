@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,8 +26,89 @@ import {
   Download,
   Timer,
   TimerOff,
-  Clock4
+  Clock4,
+  X
 } from 'lucide-react';
+
+// Datos de Value Streams y Líneas de Producción desde el CSV
+const valueStreamData = [
+  { value: "APOLLO", label: "APOLLO" },
+  { value: "ENT", label: "ENT" },
+  { value: "EXTERNAS", label: "EXTERNAS" },
+  { value: "FIXATION", label: "FIXATION" },
+  { value: "JOINT REPAIR", label: "JOINT REPAIR" },
+  { value: "SPM", label: "SPM" },
+  { value: "WOUND", label: "WOUND" }
+];
+
+const lineaProduccionData = [
+  { value: "Auto BB", label: "Auto BB" },
+  { value: "BB Manual", label: "BB Manual" },
+  { value: "Banda 1", label: "Banda 1" },
+  { value: "Banda 2", label: "Banda 2" },
+  { value: "Celda 4", label: "Celda 4" },
+  { value: "Celda 5", label: "Celda 5" },
+  { value: "Celda 6", label: "Celda 6" },
+  { value: "Celda 7", label: "Celda 7" },
+  { value: "Celda 8", label: "Celda 8" },
+  { value: "Cer 3", label: "Cer 3" },
+  { value: "Corte", label: "Corte" },
+  { value: "Flow", label: "Flow" },
+  { value: "GAL", label: "GAL" },
+  { value: "HASS", label: "HASS" },
+  { value: "L03", label: "L03" },
+  { value: "L04", label: "L04" },
+  { value: "L05", label: "L05" },
+  { value: "L06", label: "L06" },
+  { value: "L07", label: "L07" },
+  { value: "L08 celda 1", label: "L08 celda 1" },
+  { value: "L08 celda 10", label: "L08 celda 10" },
+  { value: "L08 celda 12", label: "L08 celda 12" },
+  { value: "L08 celda 13", label: "L08 celda 13" },
+  { value: "L08 celda 14", label: "L08 celda 14" },
+  { value: "L08 celda 3", label: "L08 celda 3" },
+  { value: "L08 celda 4", label: "L08 celda 4" },
+  { value: "L08 celda 5", label: "L08 celda 5" },
+  { value: "L08 celda 6", label: "L08 celda 6" },
+  { value: "L08 celda 7", label: "L08 celda 7" },
+  { value: "L08 celda 8", label: "L08 celda 8" },
+  { value: "L09", label: "L09" },
+  { value: "L12", label: "L12" },
+  { value: "L13", label: "L13" },
+  { value: "L14", label: "L14" },
+  { value: "L14.5", label: "L14.5" },
+  { value: "Lavado Opus", label: "Lavado Opus" },
+  { value: "Lavado de Qfix", label: "Lavado de Qfix" },
+  { value: "Marking", label: "Marking" },
+  { value: "Micromolding", label: "Micromolding" },
+  { value: "Moldeadora 1", label: "Moldeadora 1" },
+  { value: "Multiwires", label: "Multiwires" },
+  { value: "Opus laser 1", label: "Opus laser 1" },
+  { value: "Opus laser 2", label: "Opus laser 2" },
+  { value: "Opus laser 3", label: "Opus laser 3" },
+  { value: "Opus laser 4", label: "Opus laser 4" },
+  { value: "Pico", label: "Pico" },
+  { value: "Plug Assy", label: "Plug Assy" },
+  { value: "Returnos-Celda", label: "Returnos-Celda" },
+  { value: "Returns-Cocinado", label: "Returns-Cocinado" },
+  { value: "Returns-Corte", label: "Returns-Corte" },
+  { value: "Returns-Soldadura", label: "Returns-Soldadura" },
+  { value: "TIC", label: "TIC" },
+  { value: "Torno 1", label: "Torno 1" },
+  { value: "Torno 2", label: "Torno 2" },
+  { value: "Torno 3", label: "Torno 3" },
+  { value: "Torno 4", label: "Torno 4" },
+  { value: "Torno 5", label: "Torno 5" },
+  { value: "Torno 6", label: "Torno 6" },
+  { value: "Triming", label: "Triming" },
+  { value: "Welding", label: "Welding" },
+  { value: "Whiteroom 1", label: "Whiteroom 1" },
+  { value: "Whiteroom 2", label: "Whiteroom 2" },
+  { value: "Whiteroom 3", label: "Whiteroom 3" },
+  { value: "ambient", label: "ambient" },
+  { value: "mangueras", label: "mangueras" },
+  { value: "termocuples", label: "termocuples" }
+];
 
 // Datos de ejemplo actualizados con todos los value streams
 const valueStreams = [
@@ -175,6 +256,7 @@ const availableStats = [
 function App() {
   const [expandedStream, setExpandedStream] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<string>("tree");
+  const [showFilters, setShowFilters] = useState<boolean>(false);
   
   // Multi-select states
   const [selectedValueStreams, setSelectedValueStreams] = useState<Option[]>([]);
@@ -190,23 +272,24 @@ function App() {
   ]);
 
   // Options for multi-selects
-  const valueStreamOptions = valueStreams.map(stream => ({
-    label: stream.name,
-    value: stream.name
-  }));
-
-  const lineOptions = valueStreams.flatMap(stream => 
-    stream.lines.map(line => ({
-      label: line.name,
-      value: line.name
-    }))
-  );
+  const valueStreamOptions = valueStreamData;
+  const lineOptions = lineaProduccionData;
 
   const shiftOptions = [
     { label: 'Turno 1', value: '1' },
     { label: 'Turno 2', value: '2' },
     { label: 'Turno 3', value: '3' }
   ];
+
+  // Filtrar líneas basadas en los Value Streams seleccionados
+  const [filteredLineOptions, setFilteredLineOptions] = useState<Option[]>(lineOptions);
+
+  // Actualizar las líneas disponibles cuando cambian los Value Streams seleccionados
+  useEffect(() => {
+    // Aquí se implementaría la lógica para filtrar las líneas según los Value Streams seleccionados
+    // Por ahora, mostramos todas las líneas
+    setFilteredLineOptions(lineOptions);
+  }, [selectedValueStreams]);
 
   // Common chart axis configuration
   const xAxisConfig = {
@@ -223,35 +306,56 @@ function App() {
   const visibleStats = availableStats.filter(stat => selectedStats.includes(stat.id));
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-3xl font-bold">Dashboard Gerencial</h1>
-            <p className="text-muted-foreground">Planta Costa Rica - Vista General</p>
-          </div>
-          <div className="flex gap-4">
-            <Tabs value={activeView} onValueChange={setActiveView} className="w-[400px]">
-              <TabsList className="grid grid-cols-3">
-                <TabsTrigger value="tree" className="flex items-center gap-2">
-                  <TreePine className="h-4 w-4" />
-                  Jerárquica
-                </TabsTrigger>
-                <TabsTrigger value="metrics" className="flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4" />
-                  Métricas
-                </TabsTrigger>
-                <TabsTrigger value="table" className="flex items-center gap-2">
-                  <TableIcon className="h-4 w-4" />
-                  Tabla
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+    <div className="container mx-auto p-4 space-y-6">
+      {/* Encabezado del Dashboard */}
+      <div className="bg-white border rounded-lg shadow-sm">
+        <div className="p-4 border-b">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900">Dashboard de Gerencia</h1>
+              <p className="text-sm text-gray-500">Vista general de todos los indicadores</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowFilters(!showFilters)}
+                className="flex items-center gap-1"
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                Filtros
+              </Button>
+              <Button variant="outline" size="sm" className="flex items-center gap-1">
+                <Download className="h-4 w-4" />
+                Exportar
+              </Button>
+            </div>
           </div>
         </div>
 
-        {/* Filtros */}
+        {/* Tabs de navegación */}
+        <div className="p-4">
+          <Tabs defaultValue="tree" onValueChange={setActiveView}>
+            <TabsList className="grid w-full max-w-md grid-cols-3">
+              <TabsTrigger value="tree" className="flex items-center gap-2">
+                <TreePine className="h-4 w-4" />
+                Jerárquica
+              </TabsTrigger>
+              <TabsTrigger value="metrics" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Métricas
+              </TabsTrigger>
+              <TabsTrigger value="table" className="flex items-center gap-2">
+                <TableIcon className="h-4 w-4" />
+                Tabla
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
+      </div>
+
+      {/* Filtros - Mostrar/Ocultar */}
+      {showFilters && (
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
@@ -259,9 +363,13 @@ function App() {
                 <SlidersHorizontal className="h-4 w-4" />
                 Filtros
               </CardTitle>
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
-                <Download className="h-4 w-4" />
-                Exportar
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-8 w-8" 
+                onClick={() => setShowFilters(false)}
+              >
+                <X className="h-4 w-4" />
               </Button>
             </div>
           </CardHeader>
@@ -279,7 +387,7 @@ function App() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Línea</label>
                 <MultiSelect
-                  options={lineOptions}
+                  options={filteredLineOptions}
                   value={selectedLines}
                   onChange={setSelectedLines}
                   placeholder="Seleccionar Líneas"
@@ -303,233 +411,233 @@ function App() {
             </div>
           </CardContent>
         </Card>
+      )}
 
-        {/* KPIs Generales */}
-        <div className="relative">
-          <div className="absolute right-2 top-2 z-10">
-            <StatsCardSelector
-              availableCards={availableStats}
-              selectedCards={selectedStats}
-              onSelectionChange={setSelectedStats}
-            />
-          </div>
-          <div className="grid grid-cols-4 gap-4">
-            {visibleStats.map(stat => (
-              <Card key={stat.id}>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
-                  {stat.icon}
-                </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
-                  <p className="text-xs text-muted-foreground">{stat.description}</p>
-                  {stat.id === 'efficiency' && (
-                    <div className="mt-4 h-2 w-full bg-secondary">
-                      <div 
-                        className="h-2 bg-primary" 
-                        style={{ width: `${Math.min(238.71, 100)}%` }}
-                      />
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+      {/* KPIs Generales */}
+      <div className="relative">
+        <div className="absolute right-2 top-2 z-10">
+          <StatsCardSelector
+            availableCards={availableStats}
+            selectedCards={selectedStats}
+            onSelectionChange={setSelectedStats}
+          />
         </div>
+        <div className="grid grid-cols-4 gap-4">
+          {visibleStats.map(stat => (
+            <Card key={stat.id}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
+                {stat.icon}
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+                <p className="text-xs text-muted-foreground">{stat.description}</p>
+                {stat.id === 'efficiency' && (
+                  <div className="mt-4 h-2 w-full bg-secondary">
+                    <div 
+                      className="h-2 bg-primary" 
+                      style={{ width: `${Math.min(238.71, 100)}%` }}
+                    />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
 
-        <Tabs value={activeView} defaultValue="tree">
-          <TabsContent value="tree" className="mt-0">
-            <div className="grid grid-cols-12 gap-6">
-              {/* Árbol Jerárquico */}
-              <Card className="col-span-4">
-                <CardHeader>
-                  <CardTitle>Jerarquía de Producción</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ScrollArea className="h-[600px] pr-4">
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <button className="w-full flex items-center justify-between p-2 bg-accent rounded-md">
-                          <div className="flex items-center gap-2">
-                            <Factory className="h-4 w-4" />
-                            <span className="font-medium">Planta Costa Rica</span>
-                          </div>
-                          <ChevronDown className="h-4 w-4" />
-                        </button>
-                        <div className="ml-6 space-y-2">
-                          {valueStreams.map((stream) => (
-                            <div key={stream.name} className="space-y-2">
-                              <button
-                                onClick={() => setExpandedStream(stream.name === expandedStream ? null : stream.name)}
-                                className="w-full flex items-center justify-between p-2 hover:bg-accent rounded-md"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Factory className="h-4 w-4" />
-                                  <span>{stream.name}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-sm text-muted-foreground">{stream.efficiency}%</span>
-                                  {expandedStream === stream.name ? (
-                                    <ChevronDown className="h-4 w-4" />
-                                  ) : (
-                                    <ChevronRight className="h-4 w-4" />
-                                  )}
-                                </div>
-                              </button>
-                              
-                              {expandedStream === stream.name && (
-                                <div className="ml-6 space-y-2">
-                                  {stream.lines.map((line) => (
-                                    <div key={line.name} className="flex items-center justify-between p-2 text-sm">
-                                      <div className="flex items-center gap-2">
-                                        <BarChart3 className="h-4 w-4" />
-                                        <span>{line.name}</span>
-                                      </div>
-                                      <span className="text-muted-foreground">{line.efficiency}%</span>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          ))}
+      <Tabs value={activeView} defaultValue="tree">
+        <TabsContent value="tree" className="mt-0">
+          <div className="grid grid-cols-12 gap-6">
+            {/* Árbol Jerárquico */}
+            <Card className="col-span-4">
+              <CardHeader>
+                <CardTitle>Jerarquía de Producción</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-[600px] pr-4">
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <button className="w-full flex items-center justify-between p-2 bg-accent rounded-md">
+                        <div className="flex items-center gap-2">
+                          <Factory className="h-4 w-4" />
+                          <span className="font-medium">Planta Costa Rica</span>
                         </div>
+                        <ChevronDown className="h-4 w-4" />
+                      </button>
+                      <div className="ml-6 space-y-2">
+                        {valueStreams.map((stream) => (
+                          <div key={stream.name} className="space-y-2">
+                            <button
+                              onClick={() => setExpandedStream(stream.name === expandedStream ? null : stream.name)}
+                              className="w-full flex items-center justify-between p-2 hover:bg-accent rounded-md"
+                            >
+                              <div className="flex items-center gap-2">
+                                <Factory className="h-4 w-4" />
+                                <span>{stream.name}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm text-muted-foreground">{stream.efficiency}%</span>
+                                {expandedStream === stream.name ? (
+                                  <ChevronDown className="h-4 w-4" />
+                                ) : (
+                                  <ChevronRight className="h-4 w-4" />
+                                )}
+                              </div>
+                            </button>
+                            
+                            {expandedStream === stream.name && (
+                              <div className="ml-6 space-y-2">
+                                {stream.lines.map((line) => (
+                                  <div key={line.name} className="flex items-center justify-between p-2 text-sm">
+                                    <div className="flex items-center gap-2">
+                                      <BarChart3 className="h-4 w-4" />
+                                      <span>{line.name}</span>
+                                    </div>
+                                    <span className="text-muted-foreground">{line.efficiency}%</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  </ScrollArea>
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+
+            {/* Gráficos y Métricas */}
+            <div className="col-span-8 space-y-6">
+              <div className="flex justify-between items-center">
+                <CardTitle>Gráficos de Rendimiento</CardTitle>
+                <ChartModal
+                  data={valueStreams}
+                  xAxisConfig={xAxisConfig}
+                  yAxisConfig={yAxisConfig}
+                />
+              </div>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle>Tendencia de Eficiencia por Value Stream</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={valueStreams}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis {...xAxisConfig} />
+                      <YAxis {...yAxisConfig} />
+                      <Tooltip />
+                      <Legend />
+                      <Line 
+                        type="monotone" 
+                        dataKey="efficiency" 
+                        stroke="#10b981" 
+                        name="Eficiencia Real"
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="target" 
+                        stroke="#6366f1" 
+                        name="Meta"
+                        strokeDasharray="5 5"
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
                 </CardContent>
               </Card>
 
-              {/* Gráficos y Métricas */}
-              <div className="col-span-8 space-y-6">
-                <div className="flex justify-between items-center">
-                  <CardTitle>Gráficos de Rendimiento</CardTitle>
-                  <ChartModal
-                    data={valueStreams}
-                    xAxisConfig={xAxisConfig}
-                    yAxisConfig={yAxisConfig}
-                  />
-                </div>
-
+              <div className="grid grid-cols-2 gap-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle>Tendencia de Eficiencia por Value Stream</CardTitle>
+                    <CardTitle>Producción por Value Stream</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ResponsiveContainer width="100%" height={300}>
-                      <LineChart data={valueStreams}>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={valueStreams}>
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis {...xAxisConfig} />
                         <YAxis {...yAxisConfig} />
                         <Tooltip />
-                        <Legend />
-                        <Line 
-                          type="monotone" 
-                          dataKey="efficiency" 
-                          stroke="#10b981" 
-                          name="Eficiencia Real"
-                        />
-                        <Line 
-                          type="monotone" 
-                          dataKey="target" 
-                          stroke="#6366f1" 
-                          name="Meta"
-                          strokeDasharray="5 5"
-                        />
-                      </LineChart>
+                        <Bar dataKey="production" fill="#10b981" name="Producción Real" />
+                        <Bar dataKey="productionTarget" fill="#6366f1" name="Meta" />
+                      </BarChart>
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Producción por Value Stream</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={200}>
-                        <BarChart data={valueStreams}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis {...xAxisConfig} />
-                          <YAxis {...yAxisConfig} />
-                          <Tooltip />
-                          <Bar dataKey="production" fill="#10b981" name="Producción Real" />
-                          <Bar dataKey="productionTarget" fill="#6366f1" name="Meta" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Distribución de Downtime</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={200}>
-                        <BarChart data={valueStreams}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis {...xAxisConfig} />
-                          <YAxis {...yAxisConfig} />
-                          <Tooltip />
-                          <Bar dataKey="downtime" fill="#f43f5e" name="Downtime (min)" />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
-                </div>
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Distribución de Downtime</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={valueStreams}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis {...xAxisConfig} />
+                        <YAxis {...yAxisConfig} />
+                        <Tooltip />
+                        <Bar dataKey="downtime" fill="#f43f5e" name="Downtime (min)" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
               </div>
             </div>
-          </TabsContent>
+          </div>
+        </TabsContent>
 
-          <TabsContent value="table" className="mt-0">
-            <Card>
-              <CardHeader>
-                <CardTitle>Vista Detallada</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="rounded-md border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Value Stream</TableHead>
-                        <TableHead>Línea</TableHead>
-                        <TableHead className="text-right">Eficiencia Real</TableHead>
-                        <TableHead className="text-right">Meta</TableHead>
-                        <TableHead className="text-right">Producción</TableHead>
-                        <TableHead className="text-right">Meta Producción</TableHead>
-                        <TableHead className="text-right">Downtime (min)</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {valueStreams.flatMap(stream => [
-                        <TableRow key={stream.name} className="bg-muted/50">
-                          <TableCell className="font-medium">{stream.name}</TableCell>
-                          <TableCell>Todas</TableCell>
-                          <TableCell className="text-right">{stream.efficiency}%</TableCell>
+        <TabsContent value="table" className="mt-0">
+          <Card>
+            <CardHeader>
+              <CardTitle>Vista Detallada</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Value Stream</TableHead>
+                      <TableHead>Línea</TableHead>
+                      <TableHead className="text-right">Eficiencia Real</TableHead>
+                      <TableHead className="text-right">Meta</TableHead>
+                      <TableHead className="text-right">Producción</TableHead>
+                      <TableHead className="text-right">Meta Producción</TableHead>
+                      <TableHead className="text-right">Downtime (min)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {valueStreams.flatMap(stream => [
+                      <TableRow key={stream.name} className="bg-muted/50">
+                        <TableCell className="font-medium">{stream.name}</TableCell>
+                        <TableCell>Todas</TableCell>
+                        <TableCell className="text-right">{stream.efficiency}%</TableCell>
+                        <TableCell className="text-right">{stream.target}%</TableCell>
+                        <TableCell className="text-right">{stream.production}</TableCell>
+                        <TableCell className="text-right">{stream.productionTarget}</TableCell>
+                        <TableCell className="text-right">{stream.downtime}</TableCell>
+                      </TableRow>,
+                      ...stream.lines.map(line => (
+                        <TableRow key={`${stream.name}-${line.name}`}>
+                          <TableCell className="text-muted-foreground">{stream.name}</TableCell>
+                          <TableCell>{line.name}</TableCell>
+                          <TableCell className="text-right">{line.efficiency}%</TableCell>
                           <TableCell className="text-right">{stream.target}%</TableCell>
-                          <TableCell className="text-right">{stream.production}</TableCell>
-                          <TableCell className="text-right">{stream.productionTarget}</TableCell>
-                          <TableCell className="text-right">{stream.downtime}</TableCell>
-                        </TableRow>,
-                        ...stream.lines.map(line => (
-                          <TableRow key={`${stream.name}-${line.name}`}>
-                            <TableCell className="text-muted-foreground">{stream.name}</TableCell>
-                            <TableCell>{line.name}</TableCell>
-                            <TableCell className="text-right">{line.efficiency}%</TableCell>
-                            <TableCell className="text-right">{stream.target}%</TableCell>
-                            <TableCell className="text-right">{line.production}</TableCell>
-                            <TableCell className="text-right">-</TableCell>
-                            <TableCell className="text-right">-</TableCell>
-                          </TableRow>
-                        ))
-                      ])}
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+                          <TableCell className="text-right">{line.production}</TableCell>
+                          <TableCell className="text-right">-</TableCell>
+                          <TableCell className="text-right">-</TableCell>
+                        </TableRow>
+                      ))
+                    ])}
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
