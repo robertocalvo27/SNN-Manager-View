@@ -25,6 +25,10 @@ export interface Stat {
   // Datos para comparación
   previousValue?: string | number;
   percentageChange?: number;
+  // Datos para indicadores de color
+  target?: number;
+  isHigherBetter?: boolean; // true si un valor más alto es mejor, false si un valor más bajo es mejor
+  numericValue?: number; // valor numérico para comparar con la meta
 }
 
 // Interfaz para líneas de producción
