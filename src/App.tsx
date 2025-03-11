@@ -37,6 +37,9 @@ import {
 import { HierarchyMetricSelector } from "./components/ui/hierarchy-metric-selector";
 import { HierarchyMetricValue } from "./components/ui/hierarchy-metric-value";
 import { hierarchyMetrics, getMetricValue } from "./lib/data/hierarchyMetrics";
+import { ChartSelectorModal } from "./components/ui/chart-selector-modal";
+import { DynamicChart } from "./components/ui/dynamic-chart";
+import { availableCharts } from "./lib/data/chartDefinitions";
 
 // Importar tipos y datos desde archivos separados
 import { Option, ValueStream, ProductionLine, ComparisonPeriod } from "@/types/common";
@@ -303,6 +306,59 @@ function App() {
   };
 
   const [selectedHierarchyMetric, setSelectedHierarchyMetric] = useState("efficiency");
+  const [selectedChartIds, setSelectedChartIds] = useState<string[]>(
+    availableCharts.filter(chart => chart.defaultVisible).map(chart => chart.id)
+  );
+
+  // Función para manejar el cambio en la selección de gráficos
+  const handleChartSelectionChange = (chartIds: string[]) => {
+    setSelectedChartIds(chartIds);
+  };
+
+  // Función para eliminar un gráfico de la vista
+  const handleRemoveChart = (chartId: string) => {
+    setSelectedChartIds(prev => prev.filter(id => id !== chartId));
+  };
+
+  // Obtener los gráficos seleccionados
+  const selectedCharts = availableCharts.filter(chart => 
+    selectedChartIds.includes(chart.id)
+  );
+
+  // Organizar los gráficos en filas y columnas
+  const organizeCharts = () => {
+    // El primer gráfico ocupa todo el ancho
+    if (selectedCharts.length === 1) {
+      return [
+        { charts: [selectedCharts[0]], span: 'col-span-12' }
+      ];
+    }
+
+    // Si hay 2 o 3 gráficos, organizarlos en una fila
+    if (selectedCharts.length <= 3) {
+      const span = `col-span-${Math.floor(12 / selectedCharts.length)}`;
+      return selectedCharts.map(chart => ({ charts: [chart], span }));
+    }
+
+    // Para 4 o más gráficos, organizarlos en filas de 2 o 3
+    const rows = [];
+    let currentRow = [];
+    
+    for (let i = 0; i < selectedCharts.length; i++) {
+      currentRow.push(selectedCharts[i]);
+      
+      // Crear una nueva fila después de 2 o 3 gráficos
+      if (currentRow.length === (i < 2 ? 2 : 3) || i === selectedCharts.length - 1) {
+        const span = `col-span-${Math.floor(12 / currentRow.length)}`;
+        rows.push(...currentRow.map(chart => ({ charts: [chart], span })));
+        currentRow = [];
+      }
+    }
+    
+    return rows;
+  };
+
+  const chartLayout = organizeCharts();
 
   return (
     <div className="container mx-auto p-4 space-y-6">
@@ -597,78 +653,42 @@ function App() {
             <div className="col-span-8 space-y-6">
               <div className="flex justify-between items-center">
                 <CardTitle>Gráficos de Rendimiento</CardTitle>
-                <ChartModal
+                <ChartSelectorModal
                   data={valueStreams}
                   xAxisConfig={xAxisConfig}
                   yAxisConfig={yAxisConfig}
+                  availableCharts={availableCharts}
+                  selectedChartIds={selectedChartIds}
+                  onChartSelectionChange={handleChartSelectionChange}
                 />
               </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Tendencia de Eficiencia por Value Stream</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={valueStreams}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis {...xAxisConfig} />
-                      <YAxis {...yAxisConfig} />
-                      <Tooltip />
-                      <Legend />
-                      <Line 
-                        type="monotone" 
-                        dataKey="efficiency" 
-                        stroke="#10b981" 
-                        name="Eficiencia Real"
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="target" 
-                        stroke="#6366f1" 
-                        name="Meta"
-                        strokeDasharray="5 5"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              <div className="grid grid-cols-2 gap-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Producción por Value Stream</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <BarChart data={valueStreams}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis {...xAxisConfig} />
-                        <YAxis {...yAxisConfig} />
-                        <Tooltip />
-                        <Bar dataKey="production" fill="#10b981" name="Producción Real" />
-                        <Bar dataKey="productionTarget" fill="#6366f1" name="Meta" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Distribución de Downtime</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <BarChart data={valueStreams}>
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis {...xAxisConfig} />
-                        <YAxis {...yAxisConfig} />
-                        <Tooltip />
-                        <Bar dataKey="downtime" fill="#f43f5e" name="Downtime (min)" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
+              <div className="grid grid-cols-12 gap-4">
+                {selectedCharts.length > 0 ? (
+                  selectedCharts.map((chart) => (
+                    <DynamicChart
+                      key={chart.id}
+                      chartDefinition={chart}
+                      data={valueStreams}
+                      xAxisConfig={xAxisConfig}
+                      yAxisConfig={yAxisConfig}
+                      onRemove={() => handleRemoveChart(chart.id)}
+                      className={
+                        selectedCharts.length === 1 
+                          ? "col-span-12" 
+                          : selectedCharts.length === 2 
+                            ? "col-span-6" 
+                            : selectedCharts.length <= 4 
+                              ? "col-span-6" 
+                              : "col-span-4"
+                      }
+                    />
+                  ))
+                ) : (
+                  <div className="col-span-12 text-center p-8 border rounded-lg">
+                    <p className="text-muted-foreground">No hay gráficos seleccionados. Haz clic en "Ver más gráficos" para agregar algunos.</p>
+                  </div>
+                )}
               </div>
             </div>
           </div>
