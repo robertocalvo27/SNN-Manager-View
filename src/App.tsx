@@ -9,6 +9,7 @@ import { DateRangeSelect } from "@/components/ui/date-range-select";
 import { StatsCardSelector } from "@/components/ui/stats-card-selector";
 import { ChartModal } from "@/components/ui/chart-modal";
 import { PercentageChange } from "@/components/ui/percentage-change";
+import { MetricValue } from "@/components/ui/metric-value";
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar
@@ -126,56 +127,77 @@ const valueStreams = [
   }
 ];
 
-// Estadísticas disponibles
+// Estadísticas disponibles con información de metas y si un valor mayor es mejor
 const availableStats = [
   {
     id: "efficiency",
     title: "Eficiencia",
     value: "238.71%",
     description: "Meta: 90%",
-    icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />
+    icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />,
+    target: 90,
+    isHigherBetter: true,
+    numericValue: 238.71
   },
   {
     id: "production",
     title: "Producción",
     value: "45,516",
     description: "Meta: 57,286",
-    icon: <Factory className="h-4 w-4 text-muted-foreground" />
+    icon: <Factory className="h-4 w-4 text-muted-foreground" />,
+    target: 57286,
+    isHigherBetter: true,
+    numericValue: 45516
   },
   {
     id: "downtime",
     title: "Downtime",
     value: "9,451.88 min",
     description: "157.53 horas",
-    icon: <Clock className="h-4 w-4 text-muted-foreground" />
+    icon: <Clock className="h-4 w-4 text-muted-foreground" />,
+    target: 8500, // Meta de downtime (menos es mejor)
+    isHigherBetter: false, // Para downtime, un valor menor es mejor
+    numericValue: 9451.88
   },
   {
     id: "absorption",
     title: "Absorción",
     value: "124.8%",
     description: "Horas ganadas vs pagadas",
-    icon: <DollarSign className="h-4 w-4 text-muted-foreground" />
+    icon: <DollarSign className="h-4 w-4 text-muted-foreground" />,
+    target: 100,
+    isHigherBetter: true,
+    numericValue: 124.8
   },
   {
     id: "paidHours",
     title: "Horas Pagadas",
     value: "12,500",
     description: "Total de horas pagadas",
-    icon: <Timer className="h-4 w-4 text-muted-foreground" />
+    icon: <Timer className="h-4 w-4 text-muted-foreground" />,
+    target: 13000, // Meta de horas pagadas (menos es mejor)
+    isHigherBetter: false,
+    numericValue: 12500
   },
   {
     id: "earnedHours",
     title: "Horas Ganadas",
     value: "15,600",
     description: "Total de horas ganadas",
-    icon: <TimerOff className="h-4 w-4 text-muted-foreground" />
+    icon: <TimerOff className="h-4 w-4 text-muted-foreground" />,
+    target: 13000,
+    isHigherBetter: true,
+    numericValue: 15600
   },
   {
     id: "netDowntime",
     title: "Downtime Neto",
     value: "8,200 min",
     description: "136.67 horas",
-    icon: <Clock4 className="h-4 w-4 text-muted-foreground" />
+    icon: <Clock4 className="h-4 w-4 text-muted-foreground" />,
+    target: 7500, // Meta de downtime neto (menos es mejor)
+    isHigherBetter: false,
+    numericValue: 8200
   }
 ];
 
@@ -422,7 +444,7 @@ function App() {
             availableCards={availableStats}
             selectedCards={selectedStats}
             onSelectionChange={setSelectedStats}
-            triggerProps={{ 'data-stats-selector-trigger': true }}
+            triggerProps={{ 'data-stats-selector-trigger': true } as any}
           />
         </div>
         
@@ -442,7 +464,13 @@ function App() {
                 {stat.icon}
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stat.value}</div>
+                {/* Usar el componente MetricValue para mostrar el valor con color según la meta */}
+                <MetricValue 
+                  value={stat.value}
+                  numericValue={stat.numericValue}
+                  target={stat.target}
+                  isHigherBetter={stat.isHigherBetter}
+                />
                 <div className="flex justify-between items-center">
                   <p className="text-xs text-muted-foreground">{stat.description}</p>
                   
@@ -451,7 +479,7 @@ function App() {
                     <div className="flex flex-col items-end">
                       <PercentageChange 
                         value={stat.percentageChange} 
-                        invertColors={stat.id === "downtime" || stat.id === "netDowntime"}
+                        invertColors={stat.id === "downtime" || stat.id === "netDowntime" || stat.id === "paidHours"}
                       />
                       <span className="text-xs text-gray-500">{stat.previousValue}</span>
                     </div>
