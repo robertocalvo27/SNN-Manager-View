@@ -30,85 +30,10 @@ import {
   X
 } from 'lucide-react';
 
-// Datos de Value Streams y Líneas de Producción desde el CSV
-const valueStreamData = [
-  { value: "APOLLO", label: "APOLLO" },
-  { value: "ENT", label: "ENT" },
-  { value: "EXTERNAS", label: "EXTERNAS" },
-  { value: "FIXATION", label: "FIXATION" },
-  { value: "JOINT REPAIR", label: "JOINT REPAIR" },
-  { value: "SPM", label: "SPM" },
-  { value: "WOUND", label: "WOUND" }
-];
-
-const lineaProduccionData = [
-  { value: "Auto BB", label: "Auto BB" },
-  { value: "BB Manual", label: "BB Manual" },
-  { value: "Banda 1", label: "Banda 1" },
-  { value: "Banda 2", label: "Banda 2" },
-  { value: "Celda 4", label: "Celda 4" },
-  { value: "Celda 5", label: "Celda 5" },
-  { value: "Celda 6", label: "Celda 6" },
-  { value: "Celda 7", label: "Celda 7" },
-  { value: "Celda 8", label: "Celda 8" },
-  { value: "Cer 3", label: "Cer 3" },
-  { value: "Corte", label: "Corte" },
-  { value: "Flow", label: "Flow" },
-  { value: "GAL", label: "GAL" },
-  { value: "HASS", label: "HASS" },
-  { value: "L03", label: "L03" },
-  { value: "L04", label: "L04" },
-  { value: "L05", label: "L05" },
-  { value: "L06", label: "L06" },
-  { value: "L07", label: "L07" },
-  { value: "L08 celda 1", label: "L08 celda 1" },
-  { value: "L08 celda 10", label: "L08 celda 10" },
-  { value: "L08 celda 12", label: "L08 celda 12" },
-  { value: "L08 celda 13", label: "L08 celda 13" },
-  { value: "L08 celda 14", label: "L08 celda 14" },
-  { value: "L08 celda 3", label: "L08 celda 3" },
-  { value: "L08 celda 4", label: "L08 celda 4" },
-  { value: "L08 celda 5", label: "L08 celda 5" },
-  { value: "L08 celda 6", label: "L08 celda 6" },
-  { value: "L08 celda 7", label: "L08 celda 7" },
-  { value: "L08 celda 8", label: "L08 celda 8" },
-  { value: "L09", label: "L09" },
-  { value: "L12", label: "L12" },
-  { value: "L13", label: "L13" },
-  { value: "L14", label: "L14" },
-  { value: "L14.5", label: "L14.5" },
-  { value: "Lavado Opus", label: "Lavado Opus" },
-  { value: "Lavado de Qfix", label: "Lavado de Qfix" },
-  { value: "Marking", label: "Marking" },
-  { value: "Micromolding", label: "Micromolding" },
-  { value: "Moldeadora 1", label: "Moldeadora 1" },
-  { value: "Multiwires", label: "Multiwires" },
-  { value: "Opus laser 1", label: "Opus laser 1" },
-  { value: "Opus laser 2", label: "Opus laser 2" },
-  { value: "Opus laser 3", label: "Opus laser 3" },
-  { value: "Opus laser 4", label: "Opus laser 4" },
-  { value: "Pico", label: "Pico" },
-  { value: "Plug Assy", label: "Plug Assy" },
-  { value: "Returnos-Celda", label: "Returnos-Celda" },
-  { value: "Returns-Cocinado", label: "Returns-Cocinado" },
-  { value: "Returns-Corte", label: "Returns-Corte" },
-  { value: "Returns-Soldadura", label: "Returns-Soldadura" },
-  { value: "TIC", label: "TIC" },
-  { value: "Torno 1", label: "Torno 1" },
-  { value: "Torno 2", label: "Torno 2" },
-  { value: "Torno 3", label: "Torno 3" },
-  { value: "Torno 4", label: "Torno 4" },
-  { value: "Torno 5", label: "Torno 5" },
-  { value: "Torno 6", label: "Torno 6" },
-  { value: "Triming", label: "Triming" },
-  { value: "Welding", label: "Welding" },
-  { value: "Whiteroom 1", label: "Whiteroom 1" },
-  { value: "Whiteroom 2", label: "Whiteroom 2" },
-  { value: "Whiteroom 3", label: "Whiteroom 3" },
-  { value: "ambient", label: "ambient" },
-  { value: "mangueras", label: "mangueras" },
-  { value: "termocuples", label: "termocuples" }
-];
+// Importar tipos y datos desde archivos separados
+import { Option, ValueStream, ProductionLine } from "@/types/common";
+import { valueStreamData, getFilteredLines } from "@/lib/data/valueStreams";
+import { shiftOptions } from "@/lib/data/shifts";
 
 // Datos de ejemplo actualizados con todos los value streams
 const valueStreams = [
@@ -196,60 +121,56 @@ const valueStreams = [
   }
 ];
 
-interface Option {
-  label: string;
-  value: string;
-}
-
+// Estadísticas disponibles
 const availableStats = [
   {
     id: "efficiency",
-    title: "Eficiencia Global",
-    icon: <TrendingUp className="h-4 w-4" />,
+    title: "Eficiencia",
     value: "238.71%",
-    description: "vs. Meta 90%"
+    description: "Meta: 90%",
+    icon: <TrendingUp className="h-4 w-4 text-muted-foreground" />
   },
   {
     id: "production",
-    title: "Producción Total",
-    icon: <Factory className="h-4 w-4" />,
-    value: "248,006",
-    description: "Meta: 275,286"
+    title: "Producción",
+    value: "45,516",
+    description: "Meta: 57,286",
+    icon: <Factory className="h-4 w-4 text-muted-foreground" />
   },
   {
     id: "downtime",
     title: "Downtime",
-    icon: <Clock className="h-4 w-4" />,
-    value: "42,622 min",
-    description: "Promedio: 6,089 min/VS"
+    value: "9,451.88 min",
+    description: "157.53 horas",
+    icon: <Clock className="h-4 w-4 text-muted-foreground" />
   },
   {
     id: "absorption",
     title: "Absorción",
-    icon: <DollarSign className="h-4 w-4" />,
-    value: "$847,320",
-    description: "42,366 horas × $20/h"
+    value: "124.8%",
+    description: "Horas ganadas vs pagadas",
+    icon: <DollarSign className="h-4 w-4 text-muted-foreground" />
   },
   {
     id: "paidHours",
     title: "Horas Pagadas",
-    icon: <Timer className="h-4 w-4" />,
-    value: "42,366",
-    description: "Total acumulado"
+    value: "12,500",
+    description: "Total de horas pagadas",
+    icon: <Timer className="h-4 w-4 text-muted-foreground" />
   },
   {
     id: "earnedHours",
     title: "Horas Ganadas",
-    icon: <Clock4 className="h-4 w-4" />,
-    value: "52,958",
-    description: "+10,592 vs pagadas"
+    value: "15,600",
+    description: "Total de horas ganadas",
+    icon: <TimerOff className="h-4 w-4 text-muted-foreground" />
   },
   {
     id: "netDowntime",
     title: "Downtime Neto",
-    icon: <TimerOff className="h-4 w-4" />,
-    value: "28,415 min",
-    description: "67% del downtime total"
+    value: "8,200 min",
+    description: "136.67 horas",
+    icon: <Clock4 className="h-4 w-4 text-muted-foreground" />
   }
 ];
 
@@ -271,24 +192,24 @@ function App() {
     "absorption"
   ]);
 
-  // Options for multi-selects
-  const valueStreamOptions = valueStreamData;
-  const lineOptions = lineaProduccionData;
-
-  const shiftOptions = [
-    { label: 'Turno 1', value: '1' },
-    { label: 'Turno 2', value: '2' },
-    { label: 'Turno 3', value: '3' }
-  ];
-
   // Filtrar líneas basadas en los Value Streams seleccionados
-  const [filteredLineOptions, setFilteredLineOptions] = useState<Option[]>(lineOptions);
+  const [filteredLineOptions, setFilteredLineOptions] = useState<Option[]>(getFilteredLines([]));
 
   // Actualizar las líneas disponibles cuando cambian los Value Streams seleccionados
   useEffect(() => {
-    // Aquí se implementaría la lógica para filtrar las líneas según los Value Streams seleccionados
-    // Por ahora, mostramos todas las líneas
-    setFilteredLineOptions(lineOptions);
+    const filteredLines = getFilteredLines(selectedValueStreams);
+    setFilteredLineOptions(filteredLines);
+    
+    // Filtrar las líneas seleccionadas para mantener solo las que están disponibles
+    const availableLineValues = new Set(filteredLines.map(line => line.value));
+    const updatedSelectedLines = selectedLines.filter(line => 
+      availableLineValues.has(line.value)
+    );
+    
+    // Actualizar las líneas seleccionadas si hay cambios
+    if (updatedSelectedLines.length !== selectedLines.length) {
+      setSelectedLines(updatedSelectedLines);
+    }
   }, [selectedValueStreams]);
 
   // Common chart axis configuration
@@ -378,7 +299,7 @@ function App() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Value Stream</label>
                 <MultiSelect
-                  options={valueStreamOptions}
+                  options={valueStreamData}
                   value={selectedValueStreams}
                   onChange={setSelectedValueStreams}
                   placeholder="Seleccionar Value Streams"
