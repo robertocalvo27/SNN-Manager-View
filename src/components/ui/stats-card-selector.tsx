@@ -17,12 +17,14 @@ interface StatsCardSelectorProps {
   availableCards: StatCard[];
   selectedCards: string[];
   onSelectionChange: (selected: string[]) => void;
+  triggerProps?: React.HTMLAttributes<HTMLButtonElement>;
 }
 
 export function StatsCardSelector({
   availableCards,
   selectedCards,
   onSelectionChange,
+  triggerProps = {},
 }: StatsCardSelectorProps) {
   const toggleCard = (cardId: string) => {
     if (selectedCards.includes(cardId)) {
@@ -35,7 +37,7 @@ export function StatsCardSelector({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant="outline" size="icon">
+        <Button variant="outline" size="icon" {...triggerProps}>
           <Settings2 className="h-4 w-4" />
         </Button>
       </PopoverTrigger>

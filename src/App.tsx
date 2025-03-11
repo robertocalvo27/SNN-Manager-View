@@ -27,7 +27,8 @@ import {
   Timer,
   TimerOff,
   Clock4,
-  X
+  X,
+  Settings2
 } from 'lucide-react';
 
 // Importar tipos y datos desde archivos separados
@@ -336,11 +337,31 @@ function App() {
 
       {/* KPIs Generales */}
       <div className="relative">
-        <div className="absolute right-2 top-2 z-10">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Métricas Principales</h2>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center gap-1"
+            onClick={() => {
+              // Este botón solo sirve como indicador visual
+              // La funcionalidad real está en el StatsCardSelector
+              const selectorButton = document.querySelector('[data-stats-selector-trigger]');
+              if (selectorButton instanceof HTMLElement) {
+                selectorButton.click();
+              }
+            }}
+          >
+            <Settings2 className="h-4 w-4" />
+            Configurar Métricas
+          </Button>
+        </div>
+        <div className="absolute right-2 top-12 z-10">
           <StatsCardSelector
             availableCards={availableStats}
             selectedCards={selectedStats}
             onSelectionChange={setSelectedStats}
+            triggerProps={{ 'data-stats-selector-trigger': true }}
           />
         </div>
         <div className="grid grid-cols-4 gap-4">
