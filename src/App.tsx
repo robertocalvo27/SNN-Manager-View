@@ -327,17 +327,36 @@ function App() {
 
   // Organizar los gráficos en filas y columnas
   const organizeCharts = () => {
-    // Organizar los gráficos en una estructura de filas
-    const rows = [];
-    let currentRow = [];
-    
-    // Primer gráfico siempre ocupa toda la fila
-    if (selectedCharts.length > 0) {
-      rows.push([selectedCharts[0]]);
+    // Si no hay gráficos seleccionados, retornar un array vacío
+    if (selectedCharts.length === 0) {
+      return [];
     }
     
-    // Organizar el resto de gráficos en filas de 2
-    for (let i = 1; i < selectedCharts.length; i++) {
+    // Si solo hay un gráfico, mostrarlo a pantalla completa
+    if (selectedCharts.length === 1) {
+      return [[selectedCharts[0]]];
+    }
+    
+    // Si hay 2 gráficos, mostrarlos en una sola fila
+    if (selectedCharts.length === 2) {
+      return [[selectedCharts[0], selectedCharts[1]]];
+    }
+    
+    // Si hay 3 gráficos, mostrar el primero en una fila y los otros dos en otra
+    if (selectedCharts.length === 3) {
+      return [
+        [selectedCharts[0]],
+        [selectedCharts[1], selectedCharts[2]]
+      ];
+    }
+    
+    // Para 4 o más gráficos, mostrar los primeros 2 en la primera fila
+    // y organizar el resto en filas de 2
+    const rows = [];
+    rows.push([selectedCharts[0], selectedCharts[1]]);
+    
+    let currentRow = [];
+    for (let i = 2; i < selectedCharts.length; i++) {
       currentRow.push(selectedCharts[i]);
       
       if (currentRow.length === 2 || i === selectedCharts.length - 1) {
@@ -655,27 +674,23 @@ function App() {
               </div>
 
               {selectedCharts.length > 0 ? (
-                <div className="space-y-6">
-                  {/* Primer gráfico (ocupa toda la fila) */}
-                  {chartRows[0] && (
-                    <DynamicChart
-                      key={chartRows[0][0].id}
-                      chartDefinition={chartRows[0][0]}
-                      data={valueStreams}
-                      xAxisConfig={xAxisConfig}
-                      yAxisConfig={yAxisConfig}
-                      onRemove={() => handleRemoveChart(chartRows[0][0].id)}
-                      className="w-full"
-                    />
-                  )}
-                  
-                  {/* Resto de filas (2 gráficos por fila) */}
-                  {chartRows.slice(1).map((row, rowIndex) => (
-                    <div key={`row-${rowIndex}`} className="grid grid-cols-2 gap-4">
+                <div className="space-y-4">
+                  {/* Renderizar filas de gráficos */}
+                  {chartRows.map((row, rowIndex) => (
+                    <div 
+                      key={`row-${rowIndex}`} 
+                      className={`grid gap-4 ${row.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}
+                    >
                       {row.map(chart => (
                         <DynamicChart
                           key={chart.id}
-                          chartDefinition={chart}
+                          chartDefinition={{
+                            ...chart,
+                            // Ajustar la altura según la posición y el número de gráficos
+                            height: rowIndex === 0 && chartRows.length > 1 
+                              ? (row.length === 1 ? 400 : 350) // Primera fila más alta
+                              : (chartRows.length <= 2 ? 350 : 300) // Filas siguientes
+                          }}
                           data={valueStreams}
                           xAxisConfig={xAxisConfig}
                           yAxisConfig={yAxisConfig}
