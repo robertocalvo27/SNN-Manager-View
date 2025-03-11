@@ -34,6 +34,9 @@ import {
   BarChart2,
   ArrowLeftRight
 } from 'lucide-react';
+import { HierarchyMetricSelector } from "./components/ui/hierarchy-metric-selector";
+import { HierarchyMetricValue } from "./components/ui/hierarchy-metric-value";
+import { hierarchyMetrics, getMetricValue } from "./lib/data/hierarchyMetrics";
 
 // Importar tipos y datos desde archivos separados
 import { Option, ValueStream, ProductionLine, ComparisonPeriod } from "@/types/common";
@@ -299,6 +302,8 @@ function App() {
     }
   };
 
+  const [selectedHierarchyMetric, setSelectedHierarchyMetric] = useState("efficiency");
+
   return (
     <div className="container mx-auto p-4 space-y-6">
       {/* Encabezado del Dashboard */}
@@ -505,11 +510,18 @@ function App() {
           <div className="grid grid-cols-12 gap-6">
             {/* Árbol Jerárquico */}
             <Card className="col-span-4">
-              <CardHeader>
+              <CardHeader className="pb-2">
                 <CardTitle>Jerarquía de Producción</CardTitle>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[600px] pr-4">
+                <div className="mb-4">
+                  <HierarchyMetricSelector 
+                    metrics={hierarchyMetrics}
+                    selectedMetric={selectedHierarchyMetric}
+                    onMetricChange={setSelectedHierarchyMetric}
+                  />
+                </div>
+                <ScrollArea className="h-[550px] pr-4">
                   <div className="space-y-4">
                     <div className="space-y-2">
                       <button className="w-full flex items-center justify-between p-2 bg-accent rounded-md">
@@ -520,41 +532,60 @@ function App() {
                         <ChevronDown className="h-4 w-4" />
                       </button>
                       <div className="ml-6 space-y-2">
-                        {valueStreams.map((stream) => (
-                          <div key={stream.name} className="space-y-2">
-                            <button
-                              onClick={() => setExpandedStream(stream.name === expandedStream ? null : stream.name)}
-                              className="w-full flex items-center justify-between p-2 hover:bg-accent rounded-md"
-                            >
-                              <div className="flex items-center gap-2">
-                                <Factory className="h-4 w-4" />
-                                <span>{stream.name}</span>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm text-muted-foreground">{stream.efficiency}%</span>
-                                {expandedStream === stream.name ? (
-                                  <ChevronDown className="h-4 w-4" />
-                                ) : (
-                                  <ChevronRight className="h-4 w-4" />
-                                )}
-                              </div>
-                            </button>
-                            
-                            {expandedStream === stream.name && (
-                              <div className="ml-6 space-y-2">
-                                {stream.lines.map((line) => (
-                                  <div key={line.name} className="flex items-center justify-between p-2 text-sm">
-                                    <div className="flex items-center gap-2">
-                                      <BarChart3 className="h-4 w-4" />
-                                      <span>{line.name}</span>
-                                    </div>
-                                    <span className="text-muted-foreground">{line.efficiency}%</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                        {valueStreams.map((stream) => {
+                          const metricData = getMetricValue(stream, selectedHierarchyMetric);
+                          const selectedMetricObj = hierarchyMetrics.find(m => m.id === selectedHierarchyMetric);
+                          
+                          return (
+                            <div key={stream.name} className="space-y-2">
+                              <button
+                                onClick={() => setExpandedStream(stream.name === expandedStream ? null : stream.name)}
+                                className="w-full flex items-center justify-between p-2 hover:bg-accent rounded-md"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Factory className="h-4 w-4" />
+                                  <span>{stream.name}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <HierarchyMetricValue 
+                                    value={metricData.value}
+                                    target={selectedMetricObj?.target}
+                                    isHigherBetter={selectedMetricObj?.isHigherBetter || true}
+                                    showPercentage={metricData.showPercentage}
+                                  />
+                                  {expandedStream === stream.name ? (
+                                    <ChevronDown className="h-4 w-4" />
+                                  ) : (
+                                    <ChevronRight className="h-4 w-4" />
+                                  )}
+                                </div>
+                              </button>
+                              
+                              {expandedStream === stream.name && (
+                                <div className="ml-6 space-y-2">
+                                  {stream.lines.map((line) => {
+                                    const lineMetricData = getMetricValue(line, selectedHierarchyMetric);
+                                    
+                                    return (
+                                      <div key={line.name} className="flex items-center justify-between p-2 text-sm">
+                                        <div className="flex items-center gap-2">
+                                          <BarChart3 className="h-4 w-4" />
+                                          <span>{line.name}</span>
+                                        </div>
+                                        <HierarchyMetricValue 
+                                          value={lineMetricData.value}
+                                          target={selectedMetricObj?.target}
+                                          isHigherBetter={selectedMetricObj?.isHigherBetter || true}
+                                          showPercentage={lineMetricData.showPercentage}
+                                        />
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
