@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { X } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ChartDefinition } from '@/lib/data/chartDefinitions';
+import { cn } from "@/lib/utils";
 
 interface DynamicChartProps {
   chartDefinition: ChartDefinition;
@@ -109,8 +110,11 @@ export function DynamicChart({
     }
   };
 
+  // Determinar la altura del gráfico
+  const chartHeight = chartDefinition.height || 300;
+
   return (
-    <Card className={className}>
+    <Card className={cn("overflow-hidden", className)}>
       <CardHeader className="pb-2 flex flex-row items-center justify-between">
         <CardTitle className="text-base">{chartDefinition.title}</CardTitle>
         <Button 
@@ -124,9 +128,11 @@ export function DynamicChart({
         </Button>
       </CardHeader>
       <CardContent>
-        <ResponsiveContainer width="100%" height={chartDefinition.height}>
-          {renderChart()}
-        </ResponsiveContainer>
+        <div className="w-full" style={{ height: `${chartHeight}px` }}>
+          <ResponsiveContainer width="100%" height="100%">
+            {renderChart()}
+          </ResponsiveContainer>
+        </div>
       </CardContent>
     </Card>
   );

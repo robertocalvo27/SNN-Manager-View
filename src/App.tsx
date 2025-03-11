@@ -327,30 +327,21 @@ function App() {
 
   // Organizar los gráficos en filas y columnas
   const organizeCharts = () => {
-    // El primer gráfico ocupa todo el ancho
-    if (selectedCharts.length === 1) {
-      return [
-        { charts: [selectedCharts[0]], span: 'col-span-12' }
-      ];
-    }
-
-    // Si hay 2 o 3 gráficos, organizarlos en una fila
-    if (selectedCharts.length <= 3) {
-      const span = `col-span-${Math.floor(12 / selectedCharts.length)}`;
-      return selectedCharts.map(chart => ({ charts: [chart], span }));
-    }
-
-    // Para 4 o más gráficos, organizarlos en filas de 2 o 3
+    // Organizar los gráficos en una estructura de filas
     const rows = [];
     let currentRow = [];
     
-    for (let i = 0; i < selectedCharts.length; i++) {
+    // Primer gráfico siempre ocupa toda la fila
+    if (selectedCharts.length > 0) {
+      rows.push([selectedCharts[0]]);
+    }
+    
+    // Organizar el resto de gráficos en filas de 2
+    for (let i = 1; i < selectedCharts.length; i++) {
       currentRow.push(selectedCharts[i]);
       
-      // Crear una nueva fila después de 2 o 3 gráficos
-      if (currentRow.length === (i < 2 ? 2 : 3) || i === selectedCharts.length - 1) {
-        const span = `col-span-${Math.floor(12 / currentRow.length)}`;
-        rows.push(...currentRow.map(chart => ({ charts: [chart], span })));
+      if (currentRow.length === 2 || i === selectedCharts.length - 1) {
+        rows.push([...currentRow]);
         currentRow = [];
       }
     }
@@ -358,7 +349,7 @@ function App() {
     return rows;
   };
 
-  const chartLayout = organizeCharts();
+  const chartRows = organizeCharts();
 
   return (
     <div className="container mx-auto p-4 space-y-6">
@@ -663,33 +654,42 @@ function App() {
                 />
               </div>
 
-              <div className="grid grid-cols-12 gap-4">
-                {selectedCharts.length > 0 ? (
-                  selectedCharts.map((chart) => (
+              {selectedCharts.length > 0 ? (
+                <div className="space-y-6">
+                  {/* Primer gráfico (ocupa toda la fila) */}
+                  {chartRows[0] && (
                     <DynamicChart
-                      key={chart.id}
-                      chartDefinition={chart}
+                      key={chartRows[0][0].id}
+                      chartDefinition={chartRows[0][0]}
                       data={valueStreams}
                       xAxisConfig={xAxisConfig}
                       yAxisConfig={yAxisConfig}
-                      onRemove={() => handleRemoveChart(chart.id)}
-                      className={
-                        selectedCharts.length === 1 
-                          ? "col-span-12" 
-                          : selectedCharts.length === 2 
-                            ? "col-span-6" 
-                            : selectedCharts.length <= 4 
-                              ? "col-span-6" 
-                              : "col-span-4"
-                      }
+                      onRemove={() => handleRemoveChart(chartRows[0][0].id)}
+                      className="w-full"
                     />
-                  ))
-                ) : (
-                  <div className="col-span-12 text-center p-8 border rounded-lg">
-                    <p className="text-muted-foreground">No hay gráficos seleccionados. Haz clic en "Ver más gráficos" para agregar algunos.</p>
-                  </div>
-                )}
-              </div>
+                  )}
+                  
+                  {/* Resto de filas (2 gráficos por fila) */}
+                  {chartRows.slice(1).map((row, rowIndex) => (
+                    <div key={`row-${rowIndex}`} className="grid grid-cols-2 gap-4">
+                      {row.map(chart => (
+                        <DynamicChart
+                          key={chart.id}
+                          chartDefinition={chart}
+                          data={valueStreams}
+                          xAxisConfig={xAxisConfig}
+                          yAxisConfig={yAxisConfig}
+                          onRemove={() => handleRemoveChart(chart.id)}
+                        />
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center p-8 border rounded-lg">
+                  <p className="text-muted-foreground">No hay gráficos seleccionados. Haz clic en "Ver más gráficos" para agregar algunos.</p>
+                </div>
+              )}
             </div>
           </div>
         </TabsContent>

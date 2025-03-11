@@ -5,15 +5,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { BarChart3, Plus } from "lucide-react";
+import { BarChart3, Plus, Check } from "lucide-react";
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ChartDefinition } from '@/lib/data/chartDefinitions';
+import { cn } from "@/lib/utils";
 
 interface ChartSelectorModalProps {
   data: any[];
@@ -32,12 +34,15 @@ export function ChartSelectorModal({
   selectedChartIds,
   onChartSelectionChange
 }: ChartSelectorModalProps) {
+  const [open, setOpen] = React.useState(false);
   const [localSelectedCharts, setLocalSelectedCharts] = React.useState<string[]>(selectedChartIds);
 
-  // Actualizar la selección local cuando cambian las props
+  // Actualizar la selección local cuando cambian las props o se abre el modal
   React.useEffect(() => {
-    setLocalSelectedCharts(selectedChartIds);
-  }, [selectedChartIds]);
+    if (open) {
+      setLocalSelectedCharts(selectedChartIds);
+    }
+  }, [selectedChartIds, open]);
 
   const handleChartToggle = (chartId: string) => {
     setLocalSelectedCharts(prev => {
@@ -51,14 +56,18 @@ export function ChartSelectorModal({
 
   const handleApplySelection = () => {
     onChartSelectionChange(localSelectedCharts);
+    setOpen(false);
   };
 
   // Renderizar una vista previa del gráfico
   const renderChartPreview = (chart: ChartDefinition) => {
+    // Usar solo los primeros 3 elementos de datos para la vista previa
+    const previewData = data.slice(0, 3);
+    
     switch (chart.type) {
       case 'line':
         return (
-          <LineChart data={data.slice(0, 3)}>
+          <LineChart data={previewData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis {...xAxisConfig} />
             <YAxis {...yAxisConfig} />
@@ -76,7 +85,7 @@ export function ChartSelectorModal({
         );
       case 'bar':
         return (
-          <BarChart data={data.slice(0, 3)}>
+          <BarChart data={previewData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis {...xAxisConfig} />
             <YAxis {...yAxisConfig} />
@@ -92,7 +101,7 @@ export function ChartSelectorModal({
         );
       case 'area':
         return (
-          <AreaChart data={data.slice(0, 3)}>
+          <AreaChart data={previewData}>
             <CartesianGrid strokeDasharray="3 3" />
             <XAxis {...xAxisConfig} />
             <YAxis {...yAxisConfig} />
@@ -114,7 +123,7 @@ export function ChartSelectorModal({
             {chart.series.map((serie, i) => (
               <Pie
                 key={i}
-                data={data.slice(0, 3)}
+                data={previewData}
                 dataKey={serie.key}
                 nameKey="name"
                 cx="50%"
@@ -133,7 +142,7 @@ export function ChartSelectorModal({
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="outline" className="flex items-center gap-2">
           <BarChart3 className="h-4 w-4" />
@@ -144,45 +153,55 @@ export function ChartSelectorModal({
         <DialogHeader>
           <DialogTitle>Seleccionar Gráficos</DialogTitle>
         </DialogHeader>
-        <ScrollArea className="h-[calc(90vh-120px)]">
+        <ScrollArea className="h-[calc(90vh-180px)]">
           <div className="grid grid-cols-2 gap-6 p-6">
-            {availableCharts.map((chart) => (
-              <Card key={chart.id} className={`overflow-hidden transition-all ${localSelectedCharts.includes(chart.id) ? 'ring-2 ring-primary' : ''}`}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{chart.title}</CardTitle>
-                    <div className="flex items-center space-x-2">
-                      <Checkbox 
-                        id={`chart-${chart.id}`} 
-                        checked={localSelectedCharts.includes(chart.id)}
-                        onCheckedChange={() => handleChartToggle(chart.id)}
-                      />
-                      <Label htmlFor={`chart-${chart.id}`}>Mostrar</Label>
-                    </div>
-                  </div>
-                  {chart.description && (
-                    <CardDescription>{chart.description}</CardDescription>
+            {availableCharts.map((chart) => {
+              const isSelected = localSelectedCharts.includes(chart.id);
+              return (
+                <Card 
+                  key={chart.id} 
+                  className={cn(
+                    "overflow-hidden transition-all cursor-pointer hover:border-primary/50",
+                    isSelected ? "ring-2 ring-primary border-primary" : ""
                   )}
-                </CardHeader>
-                <CardContent>
-                  <div className="h-[150px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      {renderChartPreview(chart)}
-                    </ResponsiveContainer>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  onClick={() => handleChartToggle(chart.id)}
+                >
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-base">{chart.title}</CardTitle>
+                      <div className="flex items-center space-x-2">
+                        <div className={cn(
+                          "h-5 w-5 rounded-sm border flex items-center justify-center",
+                          isSelected ? "bg-primary border-primary" : "border-input"
+                        )}>
+                          {isSelected && <Check className="h-3.5 w-3.5 text-primary-foreground" />}
+                        </div>
+                      </div>
+                    </div>
+                    {chart.description && (
+                      <CardDescription>{chart.description}</CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[150px] w-full">
+                      <ResponsiveContainer width="100%" height="100%">
+                        {renderChartPreview(chart)}
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </ScrollArea>
-        <div className="flex justify-end space-x-2 pt-4">
-          <Button variant="outline" onClick={() => setLocalSelectedCharts(selectedChartIds)}>
+        <DialogFooter className="flex justify-end space-x-2 pt-4">
+          <Button variant="outline" onClick={() => setOpen(false)}>
             Cancelar
           </Button>
           <Button onClick={handleApplySelection}>
             Aplicar Cambios
           </Button>
-        </div>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
