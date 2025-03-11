@@ -8,6 +8,7 @@ import { MultiSelect } from "@/components/ui/multi-select";
 import { DateRangeSelect } from "@/components/ui/date-range-select";
 import { StatsCardSelector } from "@/components/ui/stats-card-selector";
 import { ChartModal } from "@/components/ui/chart-modal";
+import { PercentageChange } from "@/components/ui/percentage-change";
 import { 
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar
@@ -28,13 +29,16 @@ import {
   TimerOff,
   Clock4,
   X,
-  Settings2
+  Settings2,
+  BarChart2,
+  ArrowLeftRight
 } from 'lucide-react';
 
 // Importar tipos y datos desde archivos separados
-import { Option, ValueStream, ProductionLine } from "@/types/common";
+import { Option, ValueStream, ProductionLine, ComparisonPeriod } from "@/types/common";
 import { valueStreamData, getFilteredLines } from "@/lib/data/valueStreams";
 import { shiftOptions } from "@/lib/data/shifts";
+import { applyComparisonData } from "@/lib/data/comparisonData";
 
 // Datos de ejemplo actualizados con todos los value streams
 const valueStreams = [
@@ -179,6 +183,8 @@ function App() {
   const [expandedStream, setExpandedStream] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<string>("tree");
   const [showFilters, setShowFilters] = useState<boolean>(false);
+  const [comparisonPeriod, setComparisonPeriod] = useState<ComparisonPeriod>("none");
+  const [selectedDateRange, setSelectedDateRange] = useState<string>("day"); // 'day', 'week', 'month'
   
   // Multi-select states
   const [selectedValueStreams, setSelectedValueStreams] = useState<Option[]>([]);
@@ -213,6 +219,30 @@ function App() {
     }
   }, [selectedValueStreams]);
 
+  // Función para alternar el período de comparación
+  const toggleComparison = () => {
+    // Si no hay comparación activa, establecer según el rango de fecha seleccionado
+    if (comparisonPeriod === "none") {
+      setComparisonPeriod(selectedDateRange as ComparisonPeriod);
+    } else {
+      // Si ya hay una comparación activa, desactivarla
+      setComparisonPeriod("none");
+    }
+  };
+
+  // Función para manejar el cambio en el rango de fechas
+  const handleDateRangeChange = (range: any) => {
+    console.log('Date range changed:', range);
+    // Actualizar el rango de fechas seleccionado
+    if (range.preset) {
+      setSelectedDateRange(range.preset);
+      // Si hay una comparación activa, actualizarla según el nuevo rango
+      if (comparisonPeriod !== "none") {
+        setComparisonPeriod(range.preset as ComparisonPeriod);
+      }
+    }
+  };
+
   // Common chart axis configuration
   const xAxisConfig = {
     dataKey: "name",
@@ -225,7 +255,27 @@ function App() {
     width: 80
   };
 
-  const visibleStats = availableStats.filter(stat => selectedStats.includes(stat.id));
+  // Aplicar datos de comparación a las estadísticas si es necesario
+  const statsWithComparison = applyComparisonData(
+    availableStats, 
+    comparisonPeriod === "none" ? "none" : (comparisonPeriod as 'day' | 'week' | 'month')
+  );
+  
+  const visibleStats = statsWithComparison.filter(stat => selectedStats.includes(stat.id));
+
+  // Determinar el texto del período de comparación
+  const getComparisonText = () => {
+    switch (comparisonPeriod) {
+      case "day":
+        return "vs Ayer";
+      case "week":
+        return "vs Semana Anterior";
+      case "month":
+        return "vs Mes Anterior";
+      default:
+        return "";
+    }
+  };
 
   return (
     <div className="container mx-auto p-4 space-y-6">
@@ -327,7 +377,7 @@ function App() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Rango de Fechas</label>
                 <DateRangeSelect
-                  onRangeChange={(range) => console.log('Date range changed:', range)}
+                  onRangeChange={handleDateRangeChange}
                 />
               </div>
             </div>
@@ -339,22 +389,33 @@ function App() {
       <div className="relative">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-lg font-semibold">Métricas Principales</h2>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="flex items-center gap-1"
-            onClick={() => {
-              // Este botón solo sirve como indicador visual
-              // La funcionalidad real está en el StatsCardSelector
-              const selectorButton = document.querySelector('[data-stats-selector-trigger]');
-              if (selectorButton instanceof HTMLElement) {
-                selectorButton.click();
-              }
-            }}
-          >
-            <Settings2 className="h-4 w-4" />
-            Configurar Métricas
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button 
+              variant={comparisonPeriod !== "none" ? "default" : "outline"}
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={toggleComparison}
+            >
+              <ArrowLeftRight className="h-4 w-4" />
+              {comparisonPeriod === "none" ? "Comparar" : "Comparando"}
+            </Button>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={() => {
+                // Este botón solo sirve como indicador visual
+                // La funcionalidad real está en el StatsCardSelector
+                const selectorButton = document.querySelector('[data-stats-selector-trigger]');
+                if (selectorButton instanceof HTMLElement) {
+                  selectorButton.click();
+                }
+              }}
+            >
+              <Settings2 className="h-4 w-4" />
+              Configurar Métricas
+            </Button>
+          </div>
         </div>
         <div className="absolute right-2 top-12 z-10">
           <StatsCardSelector
@@ -364,6 +425,15 @@ function App() {
             triggerProps={{ 'data-stats-selector-trigger': true }}
           />
         </div>
+        
+        {/* Texto de comparación */}
+        {comparisonPeriod !== "none" && (
+          <div className="mb-2 text-sm font-medium text-gray-500 flex items-center">
+            <BarChart2 className="h-4 w-4 mr-1" />
+            Comparando con: {getComparisonText()}
+          </div>
+        )}
+        
         <div className="grid grid-cols-4 gap-4">
           {visibleStats.map(stat => (
             <Card key={stat.id}>
@@ -373,7 +443,21 @@ function App() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground">{stat.description}</p>
+                <div className="flex justify-between items-center">
+                  <p className="text-xs text-muted-foreground">{stat.description}</p>
+                  
+                  {/* Mostrar cambio porcentual si hay comparación */}
+                  {comparisonPeriod !== "none" && stat.percentageChange !== undefined && (
+                    <div className="flex flex-col items-end">
+                      <PercentageChange 
+                        value={stat.percentageChange} 
+                        invertColors={stat.id === "downtime" || stat.id === "netDowntime"}
+                      />
+                      <span className="text-xs text-gray-500">{stat.previousValue}</span>
+                    </div>
+                  )}
+                </div>
+                
                 {stat.id === 'efficiency' && (
                   <div className="mt-4 h-2 w-full bg-secondary">
                     <div 

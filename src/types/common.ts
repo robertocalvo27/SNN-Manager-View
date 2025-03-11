@@ -22,6 +22,9 @@ export interface Stat {
   value: string | number;
   description: string;
   icon: React.ReactNode;
+  // Datos para comparación
+  previousValue?: string | number;
+  percentageChange?: number;
 }
 
 // Interfaz para líneas de producción
@@ -45,4 +48,7 @@ export interface ValueStream {
   netDowntime: number;
   realDowntime: number;
   lines: ProductionLine[];
-} 
+}
+
+// Tipos de comparación
+export type ComparisonPeriod = 'none' | 'day' | 'week' | 'month' | 'year'; 

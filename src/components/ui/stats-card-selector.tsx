@@ -17,7 +17,7 @@ interface StatsCardSelectorProps {
   availableCards: StatCard[];
   selectedCards: string[];
   onSelectionChange: (selected: string[]) => void;
-  triggerProps?: React.HTMLAttributes<HTMLButtonElement>;
+  triggerProps?: React.ButtonHTMLAttributes<HTMLButtonElement>;
 }
 
 export function StatsCardSelector({
